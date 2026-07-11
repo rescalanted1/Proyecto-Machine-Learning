@@ -1,0 +1,52 @@
+# --- Sistema / IDE ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+ENV/
+.ipynb_checkpoints/
+
+# --- FastAPI / Backend ---
+backend/.env
+backend/.python-version
+
+# --- TensorFlow / modelos temporales ---
+*.h5
+*.ckpt
+*.keras.tmp
+backend/*.tmp
+
+# --- Node / Frontend ---
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+frontend/.env
+frontend/.env.*
+
+# --- Build / coverage ---
+coverage/
+coverage-final.json
+
+# --- Docker local ---
+docker-compose.override.yml
+
+# --- Misc ---
+*.swp
