@@ -6,11 +6,9 @@ Model loading and prediction for EfficientNet TFLite.
 """
 
 from __future__ import annotations
-
 from pathlib import Path
-
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 import tflite_runtime.interpreter as tflite
 
 # ---------------------------------------------------------------------------
@@ -49,9 +47,7 @@ def preprocess_image(image: Image.Image) -> np.ndarray:
     """
     Resize and preprocess a PIL Image for EfficientNet.
     Applies EXIF transposition (auto-rotation) and BILINEAR resizing to match training.
-    """
-    from PIL import ImageOps
-    
+    """    
     # Correct image orientation based on EXIF metadata (crucial for mobile photos)
     image = ImageOps.exif_transpose(image)
     
