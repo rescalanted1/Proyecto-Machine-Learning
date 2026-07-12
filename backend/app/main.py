@@ -10,7 +10,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from .classes import CLASS_INFO, NUM_CLASSES
-from .model import predict
+from .model import predict, get_interpreter  # ← agregar get_interpreter
 from .schemas import PredictionResponse
 
 # ---------------------------------------------------------------------------
@@ -35,6 +35,13 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
+@app.on_event("startup")
+def load_model():
+    print("[INFO] Precargando modelo en startup...")
+    get_interpreter()
+    print("[INFO] Modelo listo.")
+
 
 @app.get("/")
 def root():
@@ -74,15 +81,14 @@ async def predict_endpoint(file: UploadFile = File(...)):
     # --- Top 4 Predictions ---
     indexed_preds = list(enumerate(raw_preds))
     indexed_preds.sort(key=lambda x: x[1], reverse=True)
-    top_4 = indexed_preds[:4]
     top_predictions = []
-    for idx, prob in top_4:
+    for idx, prob in indexed_preds[:4]:
         idx_info = CLASS_INFO[int(idx)]
         top_predictions.append({
             "class_name_es": idx_info["name_es"],
             "confidence": float(prob) * 100.0
         })
-
+        
     buffered = io.BytesIO()
     image.convert("RGB").save(buffered, format="PNG")
     imagen_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
