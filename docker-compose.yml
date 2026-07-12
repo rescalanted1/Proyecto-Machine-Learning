@@ -4,7 +4,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/modelo_efficientnet_final.keras:/app/modelo_efficientnet_final.keras
+      - ./backend/modelo_efficientnet.tflite:/app/modelo_efficientnet.tflite
     environment:
       - TF_CPP_MIN_LOG_LEVEL=2
     restart: unless-stopped

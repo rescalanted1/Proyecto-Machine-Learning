@@ -106,12 +106,31 @@ export default function ResultsPage({ result, onReset }) {
         {/* Bento: Grad-CAM + Diagnosis */}
         <div className="bento-grid">
           {/* Grad-CAM Image */}
-          <div className="gradcam-card">
-            <img
-              className="gradcam-card__image"
-              src={`data:image/png;base64,${gradcam_image}`}
-              alt="Imagen con mapa de calor Grad-CAM superpuesto"
-            />
+           <div className="gradcam-card">
+            {gradcam_image ? (
+              <img
+                className="gradcam-card__image"
+                src={`data:image/png;base64,${gradcam_image}`}
+                alt="Imagen analizada"
+              />
+            ) : (
+              <div
+                className="gradcam-card__image"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "var(--surface-container)",
+                }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: 48, color: "var(--outline)" }}
+                >
+                  image_not_supported
+                </span>
+              </div>
+            )}
             <div className="gradcam-card__label">
               <div
                 className={`gradcam-card__label-dot ${

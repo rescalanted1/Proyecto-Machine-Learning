@@ -2,7 +2,6 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# System deps for OpenCV
 RUN apt-get update && \
     apt-get install -y --no-install-recommends libgl1 libglib2.0-0 && \
     rm -rf /var/lib/apt/lists/*
@@ -12,9 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ ./app/
 
-# Model will be mounted via docker-compose volume
-# but also support a local copy
-COPY modelo_efficientnet_final.keras ./modelo_efficientnet_final.keras
+# Cambiado: .tflite en lugar de .keras
+COPY modelo_efficientnet.tflite ./modelo_efficientnet.tflite
 
 EXPOSE 8000
 

@@ -5,15 +5,12 @@ POST /predict  →  receives an image, returns disease prediction + Grad-CAM.
 """
 
 from __future__ import annotations
-
-import io
-
+import io, base64
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
-
 from .classes import CLASS_INFO, NUM_CLASSES
-from .model import generate_gradcam, predict
+from .model import predict
 from .schemas import PredictionResponse
 
 # ---------------------------------------------------------------------------
@@ -48,7 +45,7 @@ def root():
 async def predict_endpoint(file: UploadFile = File(...)):
     """
     Receive an image of a plant leaf and return the predicted disease,
-    confidence score, description, and a Grad-CAM heatmap overlay.
+    confidence score, description, and a the same image.
     """
     # --- Validate file type ---
     if file.content_type and not file.content_type.startswith("image/"):
@@ -86,8 +83,9 @@ async def predict_endpoint(file: UploadFile = File(...)):
             "confidence": float(prob) * 100.0
         })
 
-    # --- Grad-CAM ---
-    gradcam_b64 = generate_gradcam(image, class_idx, img_array)
+    buffered = io.BytesIO()
+    image.convert("RGB").save(buffered, format="PNG")
+    imagen_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
     return PredictionResponse(
         class_name=info["name"],
@@ -98,6 +96,6 @@ async def predict_endpoint(file: UploadFile = File(...)):
         description=info["description"],
         severity=info["severity"],
         treatment=info["treatment"],
-        gradcam_image=gradcam_b64,
+        gradcam_image=imagen_b64,
         top_predictions=top_predictions,
     )

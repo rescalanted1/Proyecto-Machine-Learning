@@ -1,47 +1,44 @@
 """
-Model loading and Grad-CAM generation for EfficientNet.
+Model loading and prediction for EfficientNet TFLite.
 
-- Loads the .keras model once at startup.
+- Loads the .tflite model once at startup.
 - Preprocesses images for EfficientNet (224×224).
-- Generates Grad-CAM heatmaps from the last convolutional layer.
 """
 
 from __future__ import annotations
 
-import base64
-import io
 from pathlib import Path
 
-import cv2
 import numpy as np
 from PIL import Image
-
-import tensorflow as tf
+import tflite_runtime.interpreter as tflite
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-MODEL_PATH = Path(__file__).resolve().parent.parent / "modelo_efficientnet_final.keras"
+MODEL_PATH = Path(__file__).resolve().parent.parent / "modelo_efficientnet.tflite"
 IMG_SIZE = (224, 224)
 
 # ---------------------------------------------------------------------------
-# Singleton model loader
+# Singleton TFLite Interpreter loader
 # ---------------------------------------------------------------------------
-_model = None
+_interpreter = None
+_input_details = None
+_output_details = None
 
 
-def get_model() -> tf.keras.Model:
-    """Load the Keras model once and cache it."""
-    global _model
-    if _model is None:
-        _model = tf.keras.models.load_model(
-            str(MODEL_PATH),
-            compile=False,
-        )
-        print(f"[INFO] Model loaded from {MODEL_PATH}")
-        print(f"[INFO] Input shape : {_model.input_shape}")
-        print(f"[INFO] Output shape: {_model.output_shape}")
-    return _model
+def get_interpreter() -> tuple[tflite.Interpreter, list[dict], list[dict]]:
+    """Load the TFLite interpreter once and cache it."""
+    global _interpreter, _input_details, _output_details
+    if _interpreter is None:
+        _interpreter = tflite.Interpreter(model_path=str(MODEL_PATH))
+        _interpreter.allocate_tensors()
+        _input_details = _interpreter.get_input_details()
+        _output_details = _interpreter.get_output_details()
+        print(f"[INFO] TFLite Model loaded from {MODEL_PATH}")
+        print(f"[INFO] Input details : {_input_details}")
+        print(f"[INFO] Output details: {_output_details}")
+    return _interpreter, _input_details, _output_details
 
 
 # ---------------------------------------------------------------------------
@@ -68,10 +65,7 @@ def preprocess_image(image: Image.Image) -> np.ndarray:
     arr = np.array(image, dtype=np.float32)
     
     # EfficientNet has its own built-in Rescaling layer [0, 255] -> [-1, 1] or similar.
-    # Thus, preprocess_input is a pass-through and expects values in [0, 255].
-    from tensorflow.keras.applications.efficientnet import preprocess_input
-    arr = preprocess_input(arr)
-    
+    # Thus, values remain in [0, 255] and we just expand the dimensions.
     return np.expand_dims(arr, axis=0)
 
 
@@ -81,7 +75,7 @@ def preprocess_image(image: Image.Image) -> np.ndarray:
 
 def predict(image: Image.Image) -> tuple[int, float, np.ndarray, np.ndarray]:
     """
-    Run inference on a PIL Image.
+    Run inference on a PIL Image using TFLite.
 
     Returns
     -------
@@ -90,9 +84,18 @@ def predict(image: Image.Image) -> tuple[int, float, np.ndarray, np.ndarray]:
     img_array : np.ndarray  (preprocessed, shape (1, 224, 224, 3))
     raw_preds : np.ndarray (probabilities for all classes)
     """
-    model = get_model()
+    interpreter, input_details, output_details = get_interpreter()
     img_array = preprocess_image(image)
-    preds = model.predict(img_array, verbose=0)
+    
+    # Set input tensor
+    interpreter.set_tensor(input_details[0]['index'], img_array)
+    
+    # Run inference
+    interpreter.invoke()
+    
+    # Get output tensor
+    preds = interpreter.get_tensor(output_details[0]['index'])
+    
     raw_preds = preds[0]
     class_idx = int(np.argmax(raw_preds))
     confidence = float(np.max(raw_preds)) * 100.0
@@ -106,17 +109,3 @@ def predict(image: Image.Image) -> tuple[int, float, np.ndarray, np.ndarray]:
 # ---------------------------------------------------------------------------
 
 
-def generate_gradcam(
-    image: Image.Image,
-    class_idx: int,
-    img_array: np.ndarray,
-) -> str:
-    """
-    Codifica la imagen original a Base64 como fallback seguro,
-    evitando errores de compatibilidad de capas internas en Keras.
-    """
-    buffer = io.BytesIO()
-    image.convert("RGB").save(buffer, format="PNG")
-    buffer.seek(0)
-    b64 = base64.b64encode(buffer.read()).decode("utf-8")
-    return b64

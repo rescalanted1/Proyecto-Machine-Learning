@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 
 class TopPrediction(BaseModel):
@@ -18,6 +18,6 @@ class PredictionResponse(BaseModel):
     description: str
     severity: str
     treatment: str
-    gradcam_image: str  # base64-encoded PNG with heatmap overlay (or original image fallback)
+    gradcam_image: str
     top_predictions: List[TopPrediction]
 
