@@ -50,3 +50,12 @@ docker-compose.override.yml
 
 # --- Misc ---
 *.swp
+
+
+# --- Local tunneling / ngrok ---
+ngrok
+ngrok.exe
+ngrok.yml
+.ngrok2/
+*.ngrok
+*.ngrok.*

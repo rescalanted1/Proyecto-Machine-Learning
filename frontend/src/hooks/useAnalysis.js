@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
 
-const API_URL = "/predict";
-
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "";
 /**
  * Custom hook to manage the analysis API call.
  *
@@ -29,7 +28,10 @@ export default function useAnalysis() {
     const timeout = setTimeout(() => controller.abort(), 60000);
 
     try {
-      const response = await fetch(API_URL, {
+      const url = API_BASE_URL                                      
+        ? new URL("/predict", API_BASE_URL).toString()                
+        : "/predict";                                                  
+      const response = await fetch(url, {
         method: "POST",
         body: formData,
         signal: controller.signal,
@@ -39,9 +41,7 @@ export default function useAnalysis() {
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(
-          body.detail || `Error del servidor (${response.status})`
-        );
+        throw new Error(body.detail || `Error del servidor (${response.status})`);
       }
 
       const result = await response.json();
